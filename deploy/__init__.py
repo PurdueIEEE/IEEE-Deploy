@@ -32,8 +32,7 @@ def deploy():
             logger.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
             
-            
-            return '<p>Recieved %s to %s</p>' % (body['events'][0],body['repository']['name'])
+            return '<p>Recieved push to %s</p>' % (body['repository']['name'])
         else: # Not a valid WebHook
             logger.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
             return ''
