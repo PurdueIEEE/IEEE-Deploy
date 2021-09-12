@@ -40,7 +40,7 @@ def deploy():
                 # Attempt a git pull for the directory
                 try:
                     subprocess.check_output(['git', '-C', repos[body['repository']['full_name']], 'pull'])
-                    logger.info('%s -- %s -- Succeed to git pull %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+                    logger.info('%s -- %s -- Succeed to git pull %s' % (time_recv, request.remote_addr,  body['repository']['full_name']))
                 except subprocess.CalledProcessError as e:
                     # Something went wrong
                     logger.error('%s -- %s -- Failed to git pull %s: %s' % (time_recv, request.remote_addr, body['repository']['full_name'], e.output))
@@ -50,7 +50,7 @@ def deploy():
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull")
             else:
                 # Not in mapping table
-                logger.warn('%s -- %s -- Repository %s is not included in mapping table' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+                logger.warn('%s -- %s -- Repository %s is not included in mapping table' % (time_recv, request.remote_addr, body['repository']['full_name']))
                 return '<p>Recieved push to %s, not in mapping table</p>' % (body['repository']['full_name'])
 
         else: # Not a valid WebHook
@@ -58,5 +58,5 @@ def deploy():
             return ''
     else:
         # This branch should never be hit, but just in case
-        logger.error('%s -- %s -- Flask allowed non-POST request' % (time_recv), request.remote_addr)
+        logger.error('%s -- %s -- Flask allowed non-POST request' % (time_recv, request.remote_addr))
         return ''
