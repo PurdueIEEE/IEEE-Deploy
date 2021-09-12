@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 
+from logging import handlers
 from flask import Flask, request
 import logging, datetime, hmac, hashlib
+from logging.handlers import RotatingFileHandler
 import secrets
 
 app = Flask(__name__)
 
-# Logging utility
-logging.basicConfig(filename='IEEE-Deploy.log', level=logging.INFO)
+# Logging utility - Limit size to 100KiB per file and keep 3 files
+# This size is used since this should only be hit infreqeuntly, so logs should be small
+logger = logging.getLogger("IEEE-Deploy")
+logger.setLevel(logging.INFO)
+handler = RotatingFileHandler("/var/log/IEEE-Deploy/status.log", maxBytes=100*1024, backupCount=3)
+logger.addHandler(handler)
 
 # All logging formatting is Python2.7
 
@@ -20,19 +26,19 @@ def deploy():
             # Validate the webhook
             signature = hmac.new(secrets.token, request.data, hashlib.sha256).hexdigest()
             if signature != request.headers["X-Hub-Signature-256"][7:]:
-                logging.warn('%s -- Invalid GitHub WebHook Signature' % (time_recv))
+                logger.warn('%s -- Invalid GitHub WebHook Signature' % (time_recv))
                 return ''
             
-            logging.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
+            logger.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
             with open('test', 'w') as file:
                 file.write(body)
             
             return '<p>Deployed!</p>'
         else: # Not a valid WebHook
-            logging.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
+            logger.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
             return ''
     else:
         # This branch should never be hit, but just in case
-        logging.error('%s -- Flask allowed non-POST request' % (time_recv))
+        logger.error('%s -- Flask allowed non-POST request' % (time_recv))
         return ''
