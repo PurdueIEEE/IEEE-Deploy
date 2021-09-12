@@ -31,10 +31,9 @@ def deploy():
             
             logger.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
-            with open('/var/log/IEEE-Deploy/test', 'w') as file:
-                file.write(body)
             
-            return '<p>Deployed!</p>'
+            
+            return '<p>Recieved %s to %s</p>' % (body['events'][0],body['repository']['name'])
         else: # Not a valid WebHook
             logger.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
             return ''
