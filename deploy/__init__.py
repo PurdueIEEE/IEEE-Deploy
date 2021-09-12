@@ -31,7 +31,7 @@ def deploy():
             
             logger.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
-            with open('test', 'w') as file:
+            with open('/var/log/IEEE-Deploy/test', 'w') as file:
                 file.write(body)
             
             return '<p>Deployed!</p>'
