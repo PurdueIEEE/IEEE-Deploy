@@ -17,7 +17,7 @@ logger.addHandler(handler)
 
 # Hardcode certain repos only
 # Change the filepath mappings if they change
-repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbooks':'/srv/web/boilerbooks'}
+repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbooks':'/srv/web/money'}
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
