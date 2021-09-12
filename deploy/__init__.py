@@ -9,6 +9,8 @@ app = Flask(__name__)
 # Logging utility
 logging.basicConfig(filename='IEEE-Deploy.log', level=logging.INFO)
 
+# All logging formatting is Python2.7
+
 @app.route('/deploy', methods=['POST'])
 def deploy():
     time_recv = datetime.datetime.now()
@@ -18,19 +20,19 @@ def deploy():
             # Validate the webhook
             signature = hmac.new(secrets.token, request.data, hashlib.sha256).hexdigest()
             if signature != request.headers["X-Hub-Signature-256"][7:]:
-                logging.warn(f'{time_recv} -- Invalid GitHub WebHook Signature')
+                logging.warn('%s -- Invalid GitHub WebHook Signature' % (time_recv))
                 return ''
             
-            logging.info(f'{time_recv} -- Recieved GitHub WebHook {request.headers["X-GitHub-Delivery"]}')
+            logging.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
             with open('test', 'w') as file:
                 file.write(body)
             
             return '<p>Deployed!</p>'
         else: # Not a valid WebHook
-            logging.info(f'{time_recv} -- Not a GitHub WebHook or Improper Headers')
+            logging.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
             return ''
     else:
         # This branch should never be hit, but just in case
-        logging.error(f'{time_recv} -- Flask allowed non-POST request')
+        logging.error('%s -- Flask allowed non-POST request' % (time_recv))
         return ''
