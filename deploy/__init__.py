@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from logging import handlers
 from flask import Flask, request
-import logging, datetime, hmac, hashlib
+import logging, datetime, hmac, hashlib, subprocess
 from logging.handlers import RotatingFileHandler
 import secrets
 
@@ -14,8 +13,11 @@ logger = logging.getLogger("IEEE-Deploy")
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler("/var/log/IEEE-Deploy/status.log", maxBytes=100*1024, backupCount=3)
 logger.addHandler(handler)
-
 # All logging formatting is Python2.7
+
+# Hardcode certain repos only
+# Change the filepath mappings if they change
+repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbooks':'/srv/web/boilerbooks'}
 
 @app.route('/deploy', methods=['POST'])
 def deploy():
@@ -26,17 +28,35 @@ def deploy():
             # Validate the webhook
             signature = hmac.new(secrets.token, request.data, hashlib.sha256).hexdigest()
             if signature != request.headers["X-Hub-Signature-256"][7:]:
-                logger.warn('%s -- Invalid GitHub WebHook Signature' % (time_recv))
+                logger.warn('%s -- %s -- Invalid GitHub WebHook Signature' % (time_recv, request.remote_addr))
                 return ''
             
-            logger.info('%s -- Recieved GitHub WebHook %s' % (time_recv, request.headers['X-GitHub-Delivery']))
             body = request.json
-            
-            return '<p>Recieved push to %s</p>' % (body['repository']['name'])
+            logger.info('%s -- %s -- Recieved GitHub WebHook %s for repo %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+
+            # Check mapping table first
+            if body['repository']['full_name'] in repos:
+                good=True
+                # Attempt a git pull for the directory
+                try:
+                    subprocess.check_output(['git', '-C', repos[body['repository']['full_name']], 'pull'])
+                    logger.info('%s -- %s -- Succeed to git pull %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+                except subprocess.CalledProcessError as e:
+                    # Something went wrong
+                    logger.error('%s -- %s -- Failed to git pull %s: %s' % (time_recv, request.remote_addr, body['repository']['full_name'], e.output))
+                    good=False
+                finally:
+                    # Spit a response back
+                    return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull")
+            else:
+                # Not in mapping table
+                logger.warn('%s -- %s -- Repository %s is not included in mapping table' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+                return '<p>Recieved push to %s, not in mapping table</p>' % (body['repository']['full_name'])
+
         else: # Not a valid WebHook
-            logger.info('%s -- Not a GitHub WebHook or Improper Headers' % (time_recv))
+            logger.info('%s -- %s -- Not a GitHub WebHook or Improper Headers' % (time_recv, request.remote_addr))
             return ''
     else:
         # This branch should never be hit, but just in case
-        logger.error('%s -- Flask allowed non-POST request' % (time_recv))
+        logger.error('%s -- %s -- Flask allowed non-POST request' % (time_recv), request.remote_addr)
         return ''
