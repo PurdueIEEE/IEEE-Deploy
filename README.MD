@@ -7,7 +7,8 @@ The way it works is by recieving a webhook from GitHub for certain repositories 
 ## Updating this service
 When you are ready to roll out a new version of this service, you will NEED to remove the `deploy/__init__.pyc` and `deploy/secrets.pyc` cache files and perform an Apache restart. Apache will cache the WSGI configuration and old code. 
 
-If you want to add/remove/update the repos this works for, change the file mapping table and perform the above steps.
+If you want to add/remove/update the repos this works for, change the file mapping table and perform the above steps. 
+Don't forget to add the WebHook on GitHub using the same secret as the server.
 
 ## Logs
 A rotating log is stored in `/var/log/IEEE-Deploy/`. It will cap each file to 100 KiB and keep only 3 past logs. Since this should be called pretty infrequently, the logs should stay pretty manageable.
