@@ -42,11 +42,11 @@ def deploy():
             # Validate the webhook
             signature = hmac.new(secrets.token, request.data, hashlib.sha256).hexdigest()
             if signature != request.headers["X-Hub-Signature-256"][7:]:
-                logger.warn('%s -- %s -- Invalid GitHub WebHook Signature' % (time_recv, request.remote_addr))
+                logger.warn('WARN: %s -- %s -- Invalid GitHub WebHook Signature' % (time_recv, request.remote_addr))
                 return '', 403 # Forbidden
             
             body = request.json
-            logger.info('%s -- %s -- Recieved GitHub WebHook %s for repo %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
+            logger.info('INFO: %s -- %s -- Recieved GitHub WebHook %s for repo %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
 
             # Check mapping table first
             if body['repository']['full_name'] in repos:
@@ -54,23 +54,23 @@ def deploy():
                 # Attempt a git pull for the directory
                 try:
                     subprocess.check_output(['git', '-C', repos[body['repository']['full_name']], 'pull'])
-                    logger.info('%s -- %s -- Succeed to git pull %s' % (time_recv, request.remote_addr,  body['repository']['full_name']))
+                    logger.info('INFO: %s -- %s -- Succeed to git pull %s' % (time_recv, request.remote_addr,  body['repository']['full_name']))
                 except subprocess.CalledProcessError as e:
                     # Something went wrong
-                    logger.error('%s -- %s -- Failed to git pull %s: %s' % (time_recv, request.remote_addr, body['repository']['full_name'], e.output))
+                    logger.error('ERROR: %s -- %s -- Failed to git pull %s: %s' % (time_recv, request.remote_addr, body['repository']['full_name'], e))
                     good=False
                 finally:
                     # Spit a response back
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
                 # Not in mapping table
-                logger.warn('%s -- %s -- Repository %s is not included in mapping table' % (time_recv, request.remote_addr, body['repository']['full_name']))
+                logger.warn('WARN: %s -- %s -- Repository %s is not included in mapping table' % (time_recv, request.remote_addr, body['repository']['full_name']))
                 return '<p>Recieved push to %s, not in mapping table</p>' % (body['repository']['full_name']), 400 # Bad Request
 
         else: # Not a valid WebHook
-            logger.info('%s -- %s -- Not a GitHub WebHook or Improper Headers' % (time_recv, request.remote_addr))
+            logger.info('INFO: %s -- %s -- Not a GitHub WebHook or Improper Headers' % (time_recv, request.remote_addr))
             return '', 404 # Not Found
     else:
         # This branch should never be hit, but just in case
-        logger.error('%s -- %s -- Flask allowed non-POST request' % (time_recv, request.remote_addr))
+        logger.error('ERROR: %s -- %s -- Flask allowed non-POST request' % (time_recv, request.remote_addr))
         return '', 404 # Not Found
