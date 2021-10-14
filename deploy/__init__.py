@@ -36,7 +36,7 @@ repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbo
 
 # Write status to a file for a poll check
 def write_status(good, repo):
-    clean_repo = repo.replace('/', '_')
+    clean_repo = str(repo.replace('/', '_'))
     with open("status-%s" % {clean_repo}, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
