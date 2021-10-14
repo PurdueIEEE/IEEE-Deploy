@@ -17,6 +17,8 @@ limitations under the License.
 from flask import Flask, request
 import logging, datetime, hmac, hashlib, subprocess
 from logging.handlers import RotatingFileHandler
+from flask.helpers import send_file
+import requests
 import secrets
 
 app = Flask(__name__)
@@ -33,6 +35,11 @@ logger.addHandler(handler)
 # Change the filepath mappings if they change
 repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbooks':'/srv/web/money'}
 
+# Write status to a file for a poll check
+def write_status(good):
+    with open("status", "w") as fptr:
+        fptr.write("GOOD" if good else "BAD")
+
 @app.route('/deploy', methods=['POST'])
 def deploy():
     time_recv = datetime.datetime.now()
@@ -44,7 +51,7 @@ def deploy():
             if signature != request.headers["X-Hub-Signature-256"][7:]:
                 logger.warn('WARN: %s -- %s -- Invalid GitHub WebHook Signature' % (time_recv, request.remote_addr))
                 return '', 403 # Forbidden
-            
+
             body = request.json
             logger.info('INFO: %s -- %s -- Recieved GitHub WebHook %s for repo %s' % (time_recv, request.remote_addr, request.headers['X-GitHub-Delivery'], body['repository']['full_name']))
 
@@ -61,6 +68,7 @@ def deploy():
                     good=False
                 finally:
                     # Spit a response back
+                    write_status(good)
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
                 # Not in mapping table
@@ -74,3 +82,15 @@ def deploy():
         # This branch should never be hit, but just in case
         logger.error('ERROR: %s -- %s -- Flask allowed non-POST request' % (time_recv, request.remote_addr))
         return '', 404 # Not Found
+
+# Is this a good idea? probably not...
+@app.route('/status', methods=['GET'])
+def status():
+    if request.method == 'GET':
+        with open('status', 'r') as fptr:
+            badge = fptr.readline().strip()
+
+        return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg', mimetype="image/svg+xml")
+
+    else:
+        pass  # Something has gone wrong
