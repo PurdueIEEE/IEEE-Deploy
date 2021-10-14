@@ -18,6 +18,7 @@ from flask import Flask, request
 import logging, datetime, hmac, hashlib, subprocess
 from logging.handlers import RotatingFileHandler
 from flask.helpers import send_file
+import re
 import secrets
 
 app = Flask(__name__)
@@ -36,7 +37,12 @@ repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbo
 
 # Write status to a file for a poll check
 def write_status(good, repo):
+
+    # This regex can break at any time, cleans the output of the payload to be just the repo name
     clean_repo = str(repo.replace('/', '_'))
+    clean_repo = re.search(r"set\(\['(.*)'\]\)",clean_repo)
+    clean_repo = clean_repo.group(0)
+
     with open("status-%s" % {clean_repo}, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
