@@ -18,7 +18,6 @@ from flask import Flask, request
 import logging, datetime, hmac, hashlib, subprocess
 from logging.handlers import RotatingFileHandler
 from flask.helpers import send_file
-import requests
 import secrets
 
 app = Flask(__name__)
@@ -69,6 +68,7 @@ def deploy():
                     good=False
                 finally:
                     # Spit a response back
+                    logger.info("TEST: %s" % body['repository']['full_name'])
                     write_status(good, body['repository']['full_name'])
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
