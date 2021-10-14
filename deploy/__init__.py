@@ -40,10 +40,10 @@ def write_status(good, repo):
 
     # This regex can break at any time, cleans the output of the payload to be just the repo name
     clean_repo = str(repo.replace('/', '_'))
-    clean_repo = re.search(r"set\(\['(.*)'\]\)",clean_repo)
-    clean_repo = clean_repo.group(0)
+    clean_repo = re.search(r"\['(.*)'\]",clean_repo)
+    clean_repo = clean_repo.group(1)
 
-    with open("status-%s" % {clean_repo}, "w") as fptr:
+    with open("status-%s" % clean_repo, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
 @app.route('/deploy', methods=['POST'])
