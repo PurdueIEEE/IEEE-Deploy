@@ -36,8 +36,9 @@ logger.addHandler(handler)
 repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbooks':'/srv/web/money'}
 
 # Write status to a file for a poll check
-def write_status(good):
-    with open("status", "w") as fptr:
+def write_status(good, repo):
+    clean_repo = repo.replace('/', '_')
+    with open("status-%s" % {clean_repo}, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
 @app.route('/deploy', methods=['POST'])
@@ -68,7 +69,7 @@ def deploy():
                     good=False
                 finally:
                     # Spit a response back
-                    write_status(good)
+                    write_status(good, body['repository']['full_name'])
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
                 # Not in mapping table
@@ -87,7 +88,10 @@ def deploy():
 @app.route('/status', methods=['GET'])
 def status():
     if request.method == 'GET':
-        with open('status', 'r') as fptr:
+        repo = request.args.get('repo')
+        if repo == None:
+            return '<p>No Repo Specified</p>', 400
+        with open('status-%s' % repo, 'r') as fptr:
             badge = fptr.readline().strip()
 
         return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg', mimetype="image/svg+xml")
