@@ -69,7 +69,7 @@ def deploy():
                     good=False
                 finally:
                     # Spit a response back
-                    write_status(good, body['repository']['full_name'])
+                    #write_status(good, body['repository']['full_name'])
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
                 # Not in mapping table
