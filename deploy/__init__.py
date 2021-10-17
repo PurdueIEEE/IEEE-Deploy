@@ -18,7 +18,6 @@ from flask import Flask, request
 import logging, datetime, hmac, hashlib, subprocess
 from logging.handlers import RotatingFileHandler
 from flask.helpers import send_file
-import requests
 import secrets
 
 app = Flask(__name__)
@@ -37,8 +36,12 @@ repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbo
 
 # Write status to a file for a poll check
 def write_status(good, repo):
-    clean_repo = repo.replace('/', '_')
-    with open("status-%s" % {clean_repo}, "w") as fptr:
+
+    clean_repo = str(repo.replace('/', '_'))
+    #clean_repo = re.search(r"\['(.*)'\]",clean_repo)
+    #clean_repo = clean_repo.group(1)
+
+    with open("/srv/web/IEEE-Deploy/status-%s" % clean_repo, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
 @app.route('/deploy', methods=['POST'])
@@ -69,7 +72,7 @@ def deploy():
                     good=False
                 finally:
                     # Spit a response back
-                    #write_status(good, body['repository']['full_name'])
+                    write_status(good, body['repository']['full_name'])
                     return '<p>Recieved push to %s, %s<p>' % (body['repository']['full_name'], "Succeed to git pull" if good else "Failed to git pull"), 200 if good else 500 # Good or server error
             else:
                 # Not in mapping table
@@ -91,10 +94,14 @@ def status():
         repo = request.args.get('repo')
         if repo == None:
             return '<p>No Repo Specified</p>', 400
-        with open('status-%s' % repo, 'r') as fptr:
+        try:
+            fptr = open('/srv/web/IEEE-Deploy/status-%s' % repo, 'r')
             badge = fptr.readline().strip()
+            fptr.close()
+        except IOError:
+            badge = "ERROR"
 
-        return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg', mimetype="image/svg+xml")
+        return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg' if badge == 'BAD' else 'deploy-ERROR.svg', mimetype="image/svg+xml")
 
     else:
         pass  # Something has gone wrong
