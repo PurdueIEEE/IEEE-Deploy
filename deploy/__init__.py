@@ -38,12 +38,11 @@ repos = {'PurdueIEEE/IEEE-Website':'/srv/web/IEEE-Website', 'PurdueIEEE/boilerbo
 # Write status to a file for a poll check
 def write_status(good, repo):
 
-    # This regex can break at any time, cleans the output of the payload to be just the repo name
     clean_repo = str(repo.replace('/', '_'))
-    clean_repo = re.search(r"\['(.*)'\]",clean_repo)
-    clean_repo = clean_repo.group(1)
+    #clean_repo = re.search(r"\['(.*)'\]",clean_repo)
+    #clean_repo = clean_repo.group(1)
 
-    with open("status-%s" % clean_repo, "w") as fptr:
+    with open("/srv/web/IEEE-Deploy/status-%s" % clean_repo, "w") as fptr:
         fptr.write("GOOD" if good else "BAD")
 
 @app.route('/deploy', methods=['POST'])
@@ -97,10 +96,14 @@ def status():
         repo = request.args.get('repo')
         if repo == None:
             return '<p>No Repo Specified</p>', 400
-        with open('status-%s' % repo, 'r') as fptr:
+        try:
+            fptr = open('/srv/web/IEEE-Deploy/status-%s' % repo, 'r')
             badge = fptr.readline().strip()
+            fptr.close()
+        except IOError:
+            badge = "ERROR"
 
-        return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg', mimetype="image/svg+xml")
+        return send_file('deploy-GOOD.svg' if badge == "GOOD" else 'deploy-FAIL.svg' if badge == 'BAD' else 'deploy-ERROR.svg', mimetype="image/svg+xml")
 
     else:
         pass  # Something has gone wrong
