@@ -1,5 +1,7 @@
 # IEEE-Deploy
 
+**DEPRECATED** We have migrated to GitHub Actions for deployment, our infrastructure got more complicated than this repo could provide. It will remain here for novelty but is not currently used.
+
 This is a basic Flask webserver to auto-deploy changes to some Purdue IEEE web services.
 
 The way it works is by recieving a webhook from GitHub for certain repositories and then doing a `git pull` on the corresponding repo.
